@@ -6,7 +6,7 @@ require('dotenv').config()
 
 const TOKEN = process.env.TOKEN
 const bot = new TelegramBot(TOKEN, { polling: true });
-console.log(TOKEN)
+
 let userStates = {}; // Хранит состояние пользователей в цепочке сообщений
 
 bot.onText(/\/start/, (msg) => {
