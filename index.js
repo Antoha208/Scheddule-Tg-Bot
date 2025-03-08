@@ -53,6 +53,7 @@ function sendMessageWithDelay(chatId) {
         const mediaGroup = messageData.content.map(photo => {
             const photoPath = path.join(__dirname, 'images', photo);
             const medias = fs.createReadStream(photoPath)
+            console.log(medias)
             return fs.existsSync(photoPath) ? { type: 'photo', media: medias } : null;
         }).filter(Boolean)        
         
