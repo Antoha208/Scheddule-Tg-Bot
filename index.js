@@ -99,35 +99,6 @@ function sendMessageWithDelay(chatId) {
 //     }
 // }
 
-// function removeButtons(chatId, messageId) {
-//     if (messageId) {
-//         const currentButtons = messages[userStates[chatId]].buttons;
-
-//         // Проходим по каждой строке кнопок и фильтруем кнопки, оставляя те, у которых callback_data !== 'next'
-//         const filteredButtons = currentButtons.map(row => 
-//             row.filter(button => button.callback_data !== 'next')
-//         ).filter(row => row.length > 0); // Убираем пустые ряды, если в строке не осталось кнопок
-
-//         // Если есть оставшиеся кнопки, редактируем сообщение
-//         if (filteredButtons.length > 0) {
-//             bot.editMessageReplyMarkup({
-//                 reply_markup: {
-//                     inline_keyboard: filteredButtons
-//                 }
-//             }, { chat_id: chatId, message_id: messageId }).catch(err => {
-//                 console.log("Ошибка при удалении кнопок:", err);
-//             });
-//         } else {
-//             // Если не осталось кнопок, удаляем все
-//             bot.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }, { chat_id: chatId, message_id: messageId }).catch(err => {
-//                 console.log("Ошибка при удалении кнопок:", err);
-//             });
-//         }
-//     }
-// }
-
-
-
 
 function clearScheduledMessage(chatId) {
     if (scheduledJobs[chatId]) {
