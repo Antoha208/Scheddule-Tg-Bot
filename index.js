@@ -12,7 +12,6 @@ const bot = new TelegramBot(TOKEN, { polling: true })
 
 let userStates = {} // Хранит состояние пользователей в цепочке сообщений
 let scheduledJobs = {} // Хранит отложенные отправки сообщений
-let timeoutJobs = {}; // Хранит таймеры автоматического перехода
 let lastMessageId = {}; // Хранит ID последнего отправленного сообщения для редактирования
 
 bot.onText(/\/start/, (msg) => {
@@ -98,7 +97,6 @@ function sendMessageWithDelay(chatId) {
 //         });
 //     }
 // }
-
 
 function clearScheduledMessage(chatId) {
     if (scheduledJobs[chatId]) {
