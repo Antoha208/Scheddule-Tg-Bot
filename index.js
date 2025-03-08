@@ -2,7 +2,7 @@ const TelegramBot = require('node-telegram-bot-api')
 require('dotenv').config()
 const schedule = require('node-schedule')
 const path = require('path')
-const fs = require('fs');
+const fs = require('fs')
 const messages = require('./messages.json') // Файл с текстами сообщений
 
 const TOKEN = process.env.TOKEN
