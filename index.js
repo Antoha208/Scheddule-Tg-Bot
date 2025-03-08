@@ -12,6 +12,8 @@ const bot = new TelegramBot(TOKEN, { polling: true })
 
 let userStates = {} // Хранит состояние пользователей в цепочке сообщений
 let scheduledJobs = {} // Хранит отложенные отправки сообщений
+let timeoutJobs = {}; // Хранит таймеры автоматического перехода
+let lastMessageId = {}; // Хранит ID последнего отправленного сообщения для редактирования
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id
@@ -21,12 +23,14 @@ bot.onText(/\/start/, (msg) => {
 
 bot.on('callback_query', (query) => {
     const chatId = query.message.chat.id;
+    // removeButtons(chatId, query.message.message_id);
+
     if (query.data === 'next') {
         userStates[chatId] = (userStates[chatId] || 0) + 1;
         if (userStates[chatId] < messages.length) {
             sendMessageWithDelay(chatId);
         } else {
-            bot.sendMessage(chatId, 'Это было последнее сообщение.');
+            // bot.sendMessage(chatId, 'Это было последнее сообщение.');
             clearScheduledMessage(chatId);
         }
     }
@@ -36,15 +40,15 @@ function sendMessageWithDelay(chatId) {
     const messageData = messages[userStates[chatId]];
     const options = getButtons(messageData.buttons);
 
-    // console.log(messageData)
-    // console.log(options)
+    let sendPromise;
 
     if (messageData.type === 'photo') {
         const photoPath = path.join(__dirname, 'images', messageData.content);
         if (fs.existsSync(photoPath)) {
-            bot.sendPhoto(chatId, fs.createReadStream(photoPath), { caption: messageData.caption, parse_mode: 'Markdown', ...options });
+            sendPromise = bot.sendPhoto(chatId, fs.createReadStream(photoPath), { caption: messageData.caption, parse_mode: 'Markdown', ...options });
         } else {
-            bot.sendMessage(chatId, 'Ошибка: изображение не найдено.', { parse_mode: 'Markdown' });
+            console.log('Ошибка: изображения не найдены.')
+            // sendPromise = bot.sendMessage(chatId, 'Ошибка: изображение не найдено.', { parse_mode: 'Markdown' });
         }
     } else if (messageData.type === 'photos') {
         const mediaGroup = messageData.content.map(photo => {
@@ -54,30 +58,75 @@ function sendMessageWithDelay(chatId) {
         }).filter(Boolean)        
         
         if (mediaGroup.length > 0) {
-            bot.sendMediaGroup(chatId, mediaGroup).then(() => {
+            sendPromise = bot.sendMediaGroup(chatId, mediaGroup).then(() => {
                 if (messageData.caption) {
                     bot.sendMessage(chatId, messageData.caption, { parse_mode: 'Markdown', ...options });
                 }
             });
         } else {
-            bot.sendMessage(chatId, 'Ошибка: изображения не найдены.', { parse_mode: 'Markdown' });
+            console.log('Ошибка: изображения не найдены.')
+            // sendPromise = bot.sendMessage(chatId, 'Ошибка: изображения не найдены.', { parse_mode: 'Markdown' });
         }
     } else if (messageData.type === 'text' || !messageData.type) {
         // Отправка текстового сообщения
-        bot.sendMessage(chatId, messageData.content, { parse_mode: 'Markdown', ...options });
+        sendPromise = bot.sendMessage(chatId, messageData.content, { parse_mode: 'Markdown', ...options });
     }
+
+    sendPromise.then(sentMessage => {
+        if (sentMessage && sentMessage.message_id) {
+            lastMessageId[chatId] = sentMessage.message_id;
+        }
+    })
     
     clearScheduledMessage(chatId);
     scheduledJobs[chatId] = schedule.scheduleJob(new Date(Date.now() + 24 * 60 * 60 * 1000), () => {
+        // removeButtons(chatId, lastMessageId[chatId]);
         userStates[chatId] = (userStates[chatId] || 0) + 1;
         if (userStates[chatId] < messages.length) {
             sendMessageWithDelay(chatId);
         } else {
-            bot.sendMessage(chatId, 'Это было последнее сообщение.');
+            // bot.sendMessage(chatId, 'Это было последнее сообщение.');
             clearScheduledMessage(chatId);
         }
     })
 }
+
+// function removeButtons(chatId, messageId) {
+//     if (messageId) {
+//         bot.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }, { chat_id: chatId, message_id: messageId }).catch(err => {
+//             console.log("Ошибка при удалении кнопок:", err);
+//         });
+//     }
+// }
+
+// function removeButtons(chatId, messageId) {
+//     if (messageId) {
+//         const currentButtons = messages[userStates[chatId]].buttons;
+
+//         // Проходим по каждой строке кнопок и фильтруем кнопки, оставляя те, у которых callback_data !== 'next'
+//         const filteredButtons = currentButtons.map(row => 
+//             row.filter(button => button.callback_data !== 'next')
+//         ).filter(row => row.length > 0); // Убираем пустые ряды, если в строке не осталось кнопок
+
+//         // Если есть оставшиеся кнопки, редактируем сообщение
+//         if (filteredButtons.length > 0) {
+//             bot.editMessageReplyMarkup({
+//                 reply_markup: {
+//                     inline_keyboard: filteredButtons
+//                 }
+//             }, { chat_id: chatId, message_id: messageId }).catch(err => {
+//                 console.log("Ошибка при удалении кнопок:", err);
+//             });
+//         } else {
+//             // Если не осталось кнопок, удаляем все
+//             bot.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }, { chat_id: chatId, message_id: messageId }).catch(err => {
+//                 console.log("Ошибка при удалении кнопок:", err);
+//             });
+//         }
+//     }
+// }
+
+
 
 
 function clearScheduledMessage(chatId) {
@@ -97,8 +146,8 @@ function getButtons(buttons) {
 }
 
 // Расписание сообщений (пример - каждый день в 10:00)
-schedule.scheduleJob('0 10 * * *', function () {
-    for (let chatId in userStates) {
-        bot.sendMessage(chatId, 'Ваше запланированное сообщение!', { parse_mode: 'Markdown', ...getButtons([{ text: "Далее", callback_data: "next" }]) });
-    }
-})
+// schedule.scheduleJob('0 10 * * *', function () {
+//     for (let chatId in userStates) {
+//         bot.sendMessage(chatId, 'Ваше запланированное сообщение!', { parse_mode: 'Markdown', ...getButtons([{ text: "Далее", callback_data: "next" }]) });
+//     }
+// })
