@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api')
 require('dotenv').config()
 const schedule = require('node-schedule')
 const path = require('path')
+const fs = require('fs');
 const messages = require('./messages.json') // Файл с текстами сообщений
 
 const TOKEN = process.env.TOKEN
@@ -48,10 +49,10 @@ function sendMessageWithDelay(chatId) {
     } else if (messageData.type === 'photos') {
         const mediaGroup = messageData.content.map(photo => {
             const photoPath = path.join(__dirname, 'images', photo);
-            console.log(photoPath)
-            return fs.existsSync(photoPath) ? { type: 'photo', media: photoPath } : null;
-        }).filter(Boolean);
-
+            const medias = fs.createReadStream(photoPath)
+            return fs.existsSync(photoPath) ? { type: 'photo', media: medias } : null;
+        }).filter(Boolean)        
+        
         if (mediaGroup.length > 0) {
             bot.sendMediaGroup(chatId, mediaGroup).then(() => {
                 if (messageData.caption) {
