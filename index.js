@@ -98,7 +98,7 @@ function scheduleNextMessage(chatId) {
 
     clearScheduledMessage(chatId); // Чистим старый таймер
 
-    scheduledJobs[chatId] = schedule.scheduleJob(new Date(Date.now() + 1 * 60 * 1000), () => {
+    scheduledJobs[chatId] = schedule.scheduleJob(new Date(Date.now() + 24 * 60 * 60 * 1000), () => {
         console.log(`Таймер сработал. Отправляем следующее сообщение для chatId: ${chatId}`);
         userStates[chatId]++;
         if (userStates[chatId] < messages.length) {
