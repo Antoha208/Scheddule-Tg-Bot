@@ -53,8 +53,8 @@ function sendMessageWithDelay(chatId) {
     } else if (messageData.type === 'photos') {
         const mediaGroup = messageData.content.map(photo => {
             const photoPath = path.join(__dirname, 'images', photo);
-            const photo = fs.createReadStream(photoPath)
-            return fs.existsSync(photoPath) ? { type: 'photo', media: photo } : null;
+            const media = fs.createReadStream(photoPath)
+            return fs.existsSync(photoPath) ? { type: 'photo', media: media } : null;
         }).filter(Boolean);
 
         if (mediaGroup.length > 0) {
